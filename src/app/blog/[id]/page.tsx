@@ -2,18 +2,17 @@ import Link from "next/link";
 import { BLOGS_API_URL } from "@/lib/constants";
 import Header from "../../components/Header";
 import { notFound } from "next/navigation";
-import { formatDate } from "@/lib/utils";
+import { formatDate, generateRandomDate } from "@/lib/utils";
 
 interface Article {
+  id: number;
   title: string;
-  description: string;
-  pubDate: string;
-  creator?: string[] | null;
-  source_id?: string;
-  category?: string[];
-  link: string;
-  content?: string;
-  image_url?: string;
+  body: string;
+  tags: string[];
+  reactions: { [key: string]: number };
+  views: number;
+  userId: number;
+  publishedAt?: string;
 }
 
 // Set revalidation time to refresh cache every hour
@@ -21,31 +20,24 @@ export const revalidate = 3600;
 
 async function fetchArticle(id: string): Promise<Article | null> {
   try {
-    const response = await fetch(`${BLOGS_API_URL}&size=50`, {
+    const response = await fetch(`${BLOGS_API_URL}/${id}`, {
       next: { revalidate },
     });
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
-    const data = await response.json();
-    console.log(data);
-    const articles = data.results || [];
+    const post = await response.json();
 
-    // For demo purposes, use the ID param to select an article from the list
-    const foundArticle = articles[parseInt(id, 10)];
-
-    if (!foundArticle) {
-      return null;
-    }
-
-    return foundArticle as Article;
+    // Add publishedAt for display purposes
+    return {
+      ...post,
+      publishedAt: generateRandomDate(),
+    };
   } catch (err) {
     console.error("Failed to fetch article:", err);
     return null;
   }
 }
-
-// Format date to match the design
 
 export default async function ArticlePage({
   params,
@@ -76,40 +68,50 @@ export default async function ArticlePage({
           </h1>
 
           <div className="text-sm text-[#5d4a2e] mb-6">
-            {article.pubDate && formatDate(article.pubDate)}
-            <div className="mt-1">
-              {article.source_id} -{" "}
-              {article.category && article.category.join(" - ")}
+            {article.publishedAt && formatDate(article.publishedAt)}
+            <div className="mt-2 flex items-center gap-2">
+              <span>Views: {article.views}</span>
+              <span className="mx-1">•</span>
+              <span>User ID: {article.userId}</span>
             </div>
-            {article.creator && (
-              <div className="mt-1">By: {article.creator.join(", ")}</div>
+            {article.tags && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {article.tags.map((tag, idx) => (
+                  <span
+                    key={idx}
+                    className="bg-[#e9dfc8] px-3 py-1 text-sm rounded-full"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
             )}
           </div>
 
-          {article.image_url && (
-            <div className="mb-6">
-              <img
-                src={article.image_url}
-                alt={article.title}
-                className="w-full h-auto rounded"
-              />
+          <div className="prose prose-lg max-w-none prose-headings:text-[#4a3922] prose-p:text-[#3d2f18]">
+            <p className="text-lg leading-relaxed whitespace-pre-line">
+              {article.body}
+            </p>
+          </div>
+
+          {article.reactions && (
+            <div className="mt-8 pt-4 border-t border-[#c3b393]">
+              <h3 className="text-lg font-semibold text-[#5d4a2e] mb-3">
+                Reactions
+              </h3>
+              <div className="flex flex-wrap gap-3">
+                {Object.entries(article.reactions).map(([reaction, count]) => (
+                  <div
+                    key={reaction}
+                    className="flex items-center gap-2 bg-[#e9dfc8] px-4 py-2 rounded-full"
+                  >
+                    <span className="text-2xl">{reaction}</span>
+                    <span className="font-bold">{count}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
-
-          <div className="prose prose-lg max-w-none prose-headings:text-[#4a3922] prose-p:text-[#3d2f18]">
-            {article.content || article.description}
-          </div>
-
-          <div className="mt-8 pt-4 border-t border-[#c3b393]">
-            <Link
-              href={article.link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[#7d5f34] hover:text-[#5d4a2e] hover:underline"
-            >
-              Read original article
-            </Link>
-          </div>
         </article>
       </main>
     </div>
