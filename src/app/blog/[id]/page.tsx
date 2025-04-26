@@ -3,6 +3,7 @@ import { BLOGS_API_URL } from "@/lib/constants";
 import Header from "../../components/Header";
 import { notFound } from "next/navigation";
 import { formatDate, generateRandomDate } from "@/lib/utils";
+import ArticleContent from "../../components/ArticleContent";
 
 interface Article {
   id: number;
@@ -88,30 +89,8 @@ export default async function ArticlePage({
             )}
           </div>
 
-          <div className="prose prose-lg max-w-none prose-headings:text-[#4a3922] prose-p:text-[#3d2f18]">
-            <p className="text-lg leading-relaxed whitespace-pre-line">
-              {article.body}
-            </p>
-          </div>
-
-          {article.reactions && (
-            <div className="mt-8 pt-4 border-t border-[#c3b393]">
-              <h3 className="text-lg font-semibold text-[#5d4a2e] mb-3">
-                Reactions
-              </h3>
-              <div className="flex flex-wrap gap-3">
-                {Object.entries(article.reactions).map(([reaction, count]) => (
-                  <div
-                    key={reaction}
-                    className="flex items-center gap-2 bg-[#e9dfc8] px-4 py-2 rounded-full"
-                  >
-                    <span className="text-2xl">{reaction}</span>
-                    <span className="font-bold">{count}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Use the client component for the article content with paywall */}
+          <ArticleContent article={article} />
         </article>
       </main>
     </div>

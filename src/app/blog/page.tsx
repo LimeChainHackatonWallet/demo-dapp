@@ -23,9 +23,7 @@ async function fetchArticles(): Promise<Article[]> {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
     const data = await response.json();
-    console.log(data);
 
-    // Add random dates to the posts for display
     return (
       data.posts.map((post: Article) => ({
         ...post,
@@ -36,6 +34,10 @@ async function fetchArticles(): Promise<Article[]> {
     console.error("Failed to fetch articles:", err);
     return [];
   }
+}
+
+function isPremiumArticle(id: number): boolean {
+  return id % 2 === 0;
 }
 
 export default async function BlogPage() {
@@ -57,8 +59,13 @@ export default async function BlogPage() {
               className="border-t-2 border-[#9c8866] pt-4 flex flex-col h-full bg-[#f9f5ea] p-4 rounded-b-lg shadow-sm"
             >
               <Link href={`/blog/${article.id}`} className="hover:opacity-80">
-                <h2 className="text-xl md:text-2xl font-bold mb-2 uppercase">
+                <h2 className="text-xl md:text-2xl font-bold mb-2 uppercase flex items-start gap-2">
                   {article.title}
+                  {isPremiumArticle(article.id) && (
+                    <span className="bg-[#c3b393] text-[#3d2f18] text-xs px-2 py-1 rounded-full uppercase font-bold tracking-wider">
+                      Premium
+                    </span>
+                  )}
                 </h2>
               </Link>
               <div className="text-sm text-[#5d4a2e] mb-4">
