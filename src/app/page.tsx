@@ -8,6 +8,7 @@ import { useAppState } from "@/context/stateContext";
 
 // TODO: move to env?
 const WALLET_URL = "http://localhost:5173/pay";
+const DAPP_WALLET_ADDRESS = "5oNDL3swdJJF1g9DzJiZ4ynHXgszjAEpUkxVYejchzrY"
 
 export default function Home() {
   const appState = useAppState();
@@ -64,6 +65,43 @@ export default function Home() {
     }
   }
 
+  async function send() {
+    const toPubKey = new PublicKey(DAPP_WALLET_ADDRESS)
+
+    function buildSupportedPaymentMethodData() {
+      return [
+        {
+          supportedMethods: WALLET_URL,
+          data: { type: "payment", to: toPubKey.toBase58(), amount: 1 },
+        },
+      ];
+    }
+
+    function buildShoppingCartDetails() {
+      return {
+        total: {
+          label: "Fake Total",
+          amount: { currency: "USD", value: "0" },
+        },
+      };
+    }
+
+    const request = new PaymentRequest(
+      buildSupportedPaymentMethodData(),
+      buildShoppingCartDetails()
+    );
+
+    try {
+      const paymentResponse = await request.show();
+      paymentResponse.complete("success");
+      const {txid} = paymentResponse.details
+      console.log(`Receveived tx hash ${txid}`)
+      // TODO: check if value is received
+    } catch (e) {
+      console.log("unsuccessful payment", e);
+    }
+  }
+
   return (
     <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
@@ -98,13 +136,24 @@ export default function Home() {
             </button>
           </div>
         ) : (
-          <div className="flex gap-4 items-center flex-col sm:flex-row">
-            <Link
+          <div>
+            <div className="flex gap-4 items-center flex-col sm:flex-row">
+              <Link
+                className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
+                href="/dashboard"
+              >
+                Dashboard
+              </Link>
+            </div>
+
+            <div className="flex gap-4 items-center flex-col sm:flex-row">
+            <button
               className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-              href="/dashboard"
+              onClick={send}
             >
-              Dashboard
-            </Link>
+              Test Send
+            </button>
+          </div>
           </div>
         )}
 
