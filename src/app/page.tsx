@@ -1,6 +1,69 @@
+"use client";
 import Image from "next/image";
+import Link from "next/link";
+import { PublicKey } from "@solana/web3.js";
+import nacl from "tweetnacl";
+import bs58 from "bs58";
+import { useAppState } from "@/context/stateContext";
+
+// TODO: move to env?
+const WALLET_URL = "http://localhost:5173/pay";
 
 export default function Home() {
+  const appState = useAppState();
+
+  async function login() {
+    const randomMessage = "random"; // TODO: make random
+    function buildSupportedPaymentMethodData() {
+      return [
+        {
+          supportedMethods: WALLET_URL,
+          data: { type: "sign", message: randomMessage },
+        },
+      ];
+    }
+
+    function buildShoppingCartDetails() {
+      return {
+        total: {
+          label: "Fake Total",
+          amount: { currency: "USD", value: "0" },
+        },
+      };
+    }
+
+    const request = new PaymentRequest(
+      buildSupportedPaymentMethodData(),
+      buildShoppingCartDetails()
+    );
+
+    try {
+      const paymentResponse = await request.show();
+      paymentResponse.complete("success");
+      const {
+        signature: sig,
+        publicKey: pk,
+        message,
+      } = paymentResponse.details;
+
+      const messageBytes = new TextEncoder().encode(message);
+      const signature = bs58.decode(sig);
+      const publicKeyBytes = new PublicKey(pk).toBytes();
+
+      const verified = nacl.sign.detached.verify(
+        messageBytes,
+        signature,
+        publicKeyBytes
+      );
+
+      if (verified) {
+        appState.setAddress(pk);
+      }
+    } catch (e) {
+      console.log("unsuccessful payment", e);
+    }
+  }
+
   return (
     <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
@@ -24,6 +87,26 @@ export default function Home() {
             Save and see your changes instantly.
           </li>
         </ol>
+
+        {!appState.address ? (
+          <div className="flex gap-4 items-center flex-col sm:flex-row">
+            <button
+              className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
+              onClick={login}
+            >
+              Login
+            </button>
+          </div>
+        ) : (
+          <div className="flex gap-4 items-center flex-col sm:flex-row">
+            <Link
+              className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
+              href="/dashboard"
+            >
+              Dashboard
+            </Link>
+          </div>
+        )}
 
         <div className="flex gap-4 items-center flex-col sm:flex-row">
           <a
