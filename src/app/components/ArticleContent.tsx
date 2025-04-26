@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import PaywallOverlay from "./PaywallOverlay";
+import { useAppState } from "@/context/stateContext";
+import Link from "next/link";
 
 interface ArticleContentProps {
   article: {
@@ -21,12 +23,10 @@ function isPremiumArticle(id: number): boolean {
 }
 
 export default function ArticleContent({ article }: ArticleContentProps) {
+  const { address } = useAppState();
   const isPremium = isPremiumArticle(article.id);
-
   const [isPaid, setIsPaid] = useState(false);
-
   const [showPaywall, setShowPaywall] = useState(true);
-
   const price = +(1 + Math.random() * 0.5).toFixed(2);
 
   useEffect(() => {
@@ -61,6 +61,31 @@ export default function ArticleContent({ article }: ArticleContentProps) {
     setShowPaywall(false);
   };
 
+  // Login prompt component
+  const LoginPrompt = () => (
+    <div className="fixed inset-0 flex items-center justify-center z-50">
+      <div className="absolute inset-0 bg-[#f3ead9]/50 backdrop-blur-sm"></div>
+      <div className="bg-[#f9f5ea] shadow-xl w-full max-w-md border border-[#bfb599] rounded-md overflow-hidden z-10 p-6">
+        <div className="text-center">
+          <h3 className="text-2xl font-serif mb-4 text-[#473a1e]">
+            Authentication Required
+          </h3>
+          <div className="w-16 h-1 bg-[#c3b393] mx-auto mb-4"></div>
+          <p className="mb-6 text-[#3d2f18]">
+            Please log in to unlock premium content. Only authenticated users
+            can purchase articles.
+          </p>
+          <Link
+            href="/"
+            className="inline-block rounded-full border border-solid border-[#9c8866] transition-colors bg-[#c3b393] text-[#3d2f18] hover:bg-[#d5c8af] font-medium px-8 py-3"
+          >
+            Go to Login Page
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="relative">
       <div
@@ -73,7 +98,11 @@ export default function ArticleContent({ article }: ArticleContentProps) {
         </p>
       </div>
 
-      {isPremium && !isPaid && showPaywall && (
+      {/* Show login prompt if premium article and user is not logged in */}
+      {isPremium && !isPaid && !address && showPaywall && <LoginPrompt />}
+
+      {/* Show paywall only if premium article, not paid, and user is logged in */}
+      {isPremium && !isPaid && address && showPaywall && (
         <PaywallOverlay
           title={article.title}
           price={price}
@@ -82,6 +111,7 @@ export default function ArticleContent({ article }: ArticleContentProps) {
         />
       )}
 
+      {/* Show unlock button if user dismissed the overlay */}
       {isPremium && !isPaid && !showPaywall && (
         <div className="mt-4 text-center">
           <button
@@ -92,6 +122,7 @@ export default function ArticleContent({ article }: ArticleContentProps) {
           </button>
         </div>
       )}
+
       {article.reactions && (
         <div
           className={`mt-8 pt-4 border-t border-[#c3b393] ${

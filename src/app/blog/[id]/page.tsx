@@ -16,7 +16,6 @@ interface Article {
   publishedAt?: string;
 }
 
-// Set revalidation time to refresh cache every hour
 export const revalidate = 3600;
 
 async function fetchArticle(id: string): Promise<Article | null> {
@@ -29,7 +28,6 @@ async function fetchArticle(id: string): Promise<Article | null> {
     }
     const post = await response.json();
 
-    // Add publishedAt for display purposes
     return {
       ...post,
       publishedAt: generateRandomDate(),
@@ -89,7 +87,6 @@ export default async function ArticlePage({
             )}
           </div>
 
-          {/* Use the client component for the article content with paywall */}
           <ArticleContent article={article} />
         </article>
       </main>
